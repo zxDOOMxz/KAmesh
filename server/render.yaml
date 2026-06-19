@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: kamesh-relay
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PORT
+        value: 8080
