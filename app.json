@@ -71,7 +71,6 @@
     },
     "plugins": [
       "expo-dev-client",
-      "expo-splash-screen",
       [
         "react-native-ble-manager",
         {
