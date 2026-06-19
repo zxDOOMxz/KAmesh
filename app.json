@@ -19,9 +19,6 @@
         "UIBackgroundModes": [
           "bluetooth-central",
           "bluetooth-peripheral",
-          "audio",
-          "bluetooth-central",
-          "bluetooth-peripheral",
           "audio"
         ],
         "NSBluetoothAlwaysUsageDescription": "KAmesh использует Bluetooth для офлайн-связи с другими устройствами",
@@ -50,45 +47,14 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_CONNECTED_DEVICE",
         "RECORD_AUDIO",
-        "POST_NOTIFICATIONS",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT",
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_ADVERTISE",
-        "BLUETOOTH_CONNECT",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_CONNECTED_DEVICE",
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "POST_NOTIFICATIONS"
       ],
       "blockedPermissions": [
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": {
-            "scheme": "kamesh"
-          },
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        },
         {
           "action": "VIEW",
           "autoVerify": true,
@@ -115,7 +81,8 @@
           "bluetoothAlwaysPermission": true
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "extra": {
       "cacheTTLHours": 24,
