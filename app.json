@@ -88,9 +88,7 @@
       }
     },
     "owner": "zxdoomxz",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "0.9.0-alpha",
     "updates": {
       "url": "https://u.expo.dev/b444d6bf-20c9-4059-b8a4-3981f02e920d"
     }
