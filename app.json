@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "KAmesh",
+    "slug": "kamesh-offline",
+    "version": "0.9.0-alpha",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "kamesh",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1117"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mash.offline",
+      "infoPlist": {
+        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral", "audio"],
+        "NSBluetoothAlwaysUsageDescription": "KAmesh использует Bluetooth для офлайн-связи с другими устройствами",
+        "NSBluetoothPeripheralUsageDescription": "KAmesh использует Bluetooth для передачи данных без интернета",
+        "NSMicrophoneUsageDescription": "KAmesh использует микрофон для записи голосовых сообщений"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D1117"
+      },
+      "package": "com.mash.offline",
+      "versionCode": 1,
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": {
+            "scheme": "kamesh"
+          },
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-dev-client",
+      [
+        "react-native-ble-manager",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysPermission": true
+        }
+      ],
+      [
+        "react-native-background-actions",
+        {
+          "title": "KAmesh",
+          "text": "KAmesh: поиск устройств…",
+          "icon": "ic_scan",
+          "color": "#00AAFF",
+          "sticky": false
+        }
+      ]
+    ],
+    "extra": {
+      "cacheTTLHours": 24
+    }
+  }
+}

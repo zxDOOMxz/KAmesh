@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+*.jks
+*.keystore
+*.p12
+android/service-account.json
+android/rustore-credentials.json
+pc-preview/dist/
+pc-preview/.vite/
+*.local
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,48 @@
+// ============================================================
+// KAmysh — Android Native Config
+// ============================================================
+// Добавьте в android/app/build.gradle:
+//
+// android {
+//   ...
+//   packagingOptions {
+//     pickFirst 'lib/armeabi-v7a/libopus.so'
+//     pickFirst 'lib/arm64-v8a/libopus.so'
+//     pickFirst 'lib/x86/libopus.so'
+//     pickFirst 'lib/x86_64/libopus.so'
+//     pickFirst 'lib/armeabi-v7a/libwebrtc.so'
+//     pickFirst 'lib/arm64-v8a/libwebrtc.so'
+//   }
+// }
+//
+// Добавьте в android/app/src/main/AndroidManifest.xml внутри <manifest>:
+//
+// <uses-permission android:name="android.permission.BLUETOOTH" />
+// <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+// <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+// <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+// <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+// <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+// <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+// <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+// <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+// <uses-permission android:name="android.permission.RECORD_AUDIO" />
+// <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+// <uses-permission android:name="android.permission.WAKE_LOCK" />
+//
+// <service
+//   android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
+//   android:foregroundServiceType="connectedDevice"
+//   android:exported="false" />
+//
+// Также добавьте внутри <application>:
+//   android:extractNativeLibs="true"
+//
+// RuStore-specific (minSdk = 24, targetSdk = 34):
+//   defaultConfig {
+//       minSdkVersion 24
+//       targetSdkVersion 34
+//   }
+//
+// Для отладки на Android 14+ требуется:
+// adb shell settings put global ble_scan_always_available 1

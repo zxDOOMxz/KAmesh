@@ -1,0 +1,24 @@
+# EAS Build — игнорируем ненужные файлы
+node_modules
+.expo
+*.log
+.git
+.github
+ios/Pods
+ios/build
+android/.gradle
+android/app/build
+android/build
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile
+service-account.json
+credentials.json
+**/.DS_Store
+write_files.py
+generate_assets.py
+promt.txt
+deepseek_TZ5.txt
