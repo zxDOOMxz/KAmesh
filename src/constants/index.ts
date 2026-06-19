@@ -96,6 +96,24 @@ export const NICKNAME_ANNOUNCE_INTERVAL_MS = 60_000;
 /** Время неактивности после которого контакт считается офлайн (мс) */
 export const CONTACT_OFFLINE_TIMEOUT_MS = 180_000;
 
+/** Запрещённые никнеймы (административные) */
+export const RESERVED_NICKNAMES = [
+  'администратор',
+  'админ',
+  'admin',
+  'moderator',
+  'moder',
+  'root',
+  'system',
+  'owner',
+];
+
+/** Никнейм владельца */
+export const DOOM_NICKNAME = 'doom';
+
+/** Пароль для никнейма DOOM */
+export const DOOM_NICKNAME_PASSWORD = '325063Dem';
+
 /** Таймаут BLE-подключения (мс) */
 export const BLE_CONNECT_TIMEOUT_MS = 15_000;
 

@@ -215,6 +215,7 @@ export interface NicknameRegistration {
   nickname: string;
   nodeId: NodeId;
   timestamp: number;
+  password?: string;
 }
 
 /** Ответ на регистрацию: принят или отклонён */

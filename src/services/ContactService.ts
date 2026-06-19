@@ -25,6 +25,9 @@ import {
   NICKNAME_REGISTER_TIMEOUT_MS,
   NICKNAME_ANNOUNCE_INTERVAL_MS,
   CONTACT_OFFLINE_TIMEOUT_MS,
+  RESERVED_NICKNAMES,
+  DOOM_NICKNAME,
+  DOOM_NICKNAME_PASSWORD,
 } from '../constants';
 
 type ContactsChangeHandler = () => void;
@@ -92,10 +95,24 @@ class ContactServiceClass {
       return false;
     }
 
+    // Проверяем запрещённые никнеймы
+    const lowerNick = trimmed.toLowerCase();
+    if (RESERVED_NICKNAMES.includes(lowerNick)) {
+      console.warn(`[ContactService] Никнейм "${trimmed}" запрещён`);
+      return false;
+    }
+
+    // Проверяем DOOM — требует пароль
+    let password: string | undefined;
+    if (lowerNick === DOOM_NICKNAME) {
+      password = DOOM_NICKNAME_PASSWORD;
+    }
+
     const registration: NicknameRegistration = {
       nickname: trimmed,
       nodeId: this.myNodeId,
       timestamp: Date.now(),
+      password,
     };
 
     let rejected = false;
@@ -209,11 +226,25 @@ class ContactServiceClass {
       const reg: NicknameRegistration = JSON.parse(packet.payload);
       if (reg.nodeId === this.myNodeId) return;
 
+      const lowerNick = reg.nickname.toLowerCase();
+
+      // Проверяем запрещённые никнеймы
+      if (RESERVED_NICKNAMES.includes(lowerNick)) {
+        this.sendReject(reg);
+        return;
+      }
+
+      // Проверяем DOOM — пароль
+      if (lowerNick === DOOM_NICKNAME && reg.password !== DOOM_NICKNAME_PASSWORD) {
+        this.sendReject(reg);
+        return;
+      }
+
       const alreadyTaken = this.contacts.some(
-        c => c.nickname.toLowerCase() === reg.nickname.toLowerCase() && c.nodeId !== reg.nodeId,
+        c => c.nickname.toLowerCase() === lowerNick && c.nodeId !== reg.nodeId,
       );
       const selfNickname = this.getMyNickname();
-      const selfTaken = selfNickname && selfNickname.toLowerCase() === reg.nickname.toLowerCase();
+      const selfTaken = selfNickname && selfNickname.toLowerCase() === lowerNick;
 
       if (alreadyTaken || selfTaken) {
         // Отклоняем
@@ -296,6 +327,21 @@ class ContactServiceClass {
   }
 
   // ==========================================================
+  private async sendReject(reg: NicknameRegistration): Promise<void> {
+    const response: NicknameResponse = {
+      nickname: reg.nickname,
+      nodeId: reg.nodeId,
+      accepted: false,
+      reason: 'Nickname reserved',
+      timestamp: Date.now(),
+    };
+    await MeshService.sendMessage(
+      MessageType.NICKNAME_REJECT,
+      JSON.stringify(response),
+      reg.nodeId,
+    );
+  }
+
   // Annouce-цикл (каждые NICKNAME_ANNOUNCE_INTERVAL_MS)
   // ==========================================================
 
