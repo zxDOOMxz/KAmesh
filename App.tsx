@@ -69,11 +69,6 @@ export default function App() {
         await MeshService.initialize();
         VoiceCallService.initialize();
 
-        MeshService.onPacket((packet) => {
-          IntercomService.handleIncomingAudio(packet.payload, packet.sourceId);
-          ChannelService.handleChannelPacket(packet);
-        });
-
         await UpdateService.initialize();
 
         const changelog = UpdateService.getPendingChangelog();
@@ -90,6 +85,9 @@ export default function App() {
         await SoundService.initialize();
         // Инициализируем сервис конференций
         await ConferenceService.initialize();
+        // Инициализируем каналы и интерком
+        ChannelService.initialize();
+        IntercomService.initialize();
 
         // Если нет никнейма — покажем экран регистрации
         if (!ContactService.hasNickname()) {
@@ -110,6 +108,8 @@ export default function App() {
     return () => {
       MeshService.destroy();
       TransportManager.destroy();
+      ChannelService.destroy();
+      IntercomService.destroy();
     };
   }, []);
 

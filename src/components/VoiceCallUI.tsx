@@ -12,7 +12,7 @@ interface VoiceCallUIProps {
   onEnd: () => void;
 }
 
-export const VoiceCallUI: React.FC<VoiceCallUIProps> = ({
+export const VoiceCallUI: React.FC<VoiceCallUIProps> = React.memo(({
   state,
   peerName,
   onAnswer,
@@ -73,7 +73,7 @@ export const VoiceCallUI: React.FC<VoiceCallUIProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   overlay: {

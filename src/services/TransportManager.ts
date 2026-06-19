@@ -67,7 +67,9 @@ class TransportManagerClass {
     for (const t of this.transports) {
       const cleanup = t.onData((data, peerId) => {
         for (const handler of this.dataHandlers) {
-          try { handler(data, peerId); } catch { /* ignore */ }
+          try { handler(data, peerId); } catch (err) {
+            console.warn('[TransportManager] data handler error:', err);
+          }
         }
       });
       this.dataCleanups.push(cleanup);
@@ -77,7 +79,9 @@ class TransportManagerClass {
     for (const t of this.transports) {
       const cleanup = t.onConnection((peerId, connected) => {
         for (const handler of this.connectionHandlers) {
-          try { handler(peerId, connected); } catch { /* ignore */ }
+          try { handler(peerId, connected); } catch (err) {
+            console.warn('[TransportManager] connection handler error:', err);
+          }
         }
       });
       this.connectionCleanups.push(cleanup);
@@ -123,9 +127,8 @@ class TransportManagerClass {
       }
     }
 
-    // Если ни один транспорт не сработал — пробуем broadcast как fallback
-    console.warn(`[TransportManager] Все транспорты не смогли доставить ${peerId}, пробую broadcast`);
-    await this.broadcast(data);
+    console.warn(`[TransportManager] Все транспорты не смогли доставить ${peerId}`);
+    // Не делаем broadcast для приватных сообщений
   }
 
   /**
@@ -142,7 +145,9 @@ class TransportManagerClass {
             console.warn(`[TransportManager] ${t.name} broadcast error:`, err);
           }));
         }
-      } catch { /* ignore */ }
+        } catch (err) {
+          console.warn(`[TransportManager] ${t.name} isAvailable error:`, err);
+        }
     }
 
     await Promise.all(promises);
@@ -150,9 +155,16 @@ class TransportManagerClass {
 
   /** Отправить через конкретный транспорт (для принудительного выбора) */
   async sendVia(transportName: string, peerId: NodeId, data: string): Promise<void> {
-    const transport = this.transports.find(t => t.name === transportName);
-    if (!transport) throw new Error(`[TransportManager] Транспорт ${transportName} не найден`);
-    await transport.send(peerId, data);
+    try {
+      const transport = this.transports.find(t => t.name === transportName);
+      if (!transport) {
+        throw new Error(`[TransportManager] Транспорт ${transportName} не найден`);
+      }
+      await transport.send(peerId, data);
+    } catch (err) {
+      console.warn(`[TransportManager] sendVia(${transportName}, ${peerId}) failed:`, err);
+      throw err;
+    }
   }
 
   // ==========================================================

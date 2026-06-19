@@ -9,6 +9,8 @@
 import NetInfo from '@react-native-community/netinfo';
 import type { ITransport, TransportDataHandler, TransportConnectionHandler } from './ITransport';
 import type { NodeId } from '../../types';
+import { withTimeout } from '../../utils/timeout';
+import { RELAY_CONNECT_TIMEOUT_MS } from '../../constants';
 
 // ============================================================
 // Константы (плейсхолдеры — заменить при деплое релея)
@@ -65,32 +67,41 @@ class GsmTransportImpl implements ITransport {
   }
 
   async send(peerId: NodeId, data: string): Promise<void> {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('[GsmTransport] WebSocket не подключён');
+    try {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        throw new Error('[GsmTransport] WebSocket не подключён');
+      }
+
+      const message = JSON.stringify({
+        type: 'relay_send',
+        targetPeerId: peerId,
+        payload: data,
+        senderId: this.myPeerId,
+        timestamp: Date.now(),
+      });
+
+      this.ws.send(message);
+    } catch (err) {
+      console.warn(`[GsmTransport] Ошибка отправки peerId=${peerId}:`, err);
+      throw err;
     }
-
-    const message = JSON.stringify({
-      type: 'relay_send',
-      targetPeerId: peerId,
-      payload: data,
-      senderId: this.myPeerId,
-      timestamp: Date.now(),
-    });
-
-    this.ws.send(message);
   }
 
   async broadcast(data: string): Promise<void> {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    try {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    const message = JSON.stringify({
-      type: 'relay_broadcast',
-      payload: data,
-      senderId: this.myPeerId,
-      timestamp: Date.now(),
-    });
+      const message = JSON.stringify({
+        type: 'relay_broadcast',
+        payload: data,
+        senderId: this.myPeerId,
+        timestamp: Date.now(),
+      });
 
-    this.ws.send(message);
+      this.ws.send(message);
+    } catch (err) {
+      console.warn('[GsmTransport] Ошибка broadcast:', err);
+    }
   }
 
   getConnectedPeers(): NodeId[] {
@@ -136,26 +147,43 @@ class GsmTransportImpl implements ITransport {
       this.intentionalClose = false;
       this.ws = new WebSocket(RELAY_URL);
 
-      this.ws.onopen = () => {
-        console.warn('[GsmTransport] WebSocket подключён к релею');
+      // Ожидаем onopen с таймаутом
+      await withTimeout(
+        new Promise<void>((resolve, reject) => {
+          const ws = this.ws!;
 
-        // Регистрируемся на релее
-        this.ws?.send(JSON.stringify({
-          type: 'relay_register',
-          peerId: this.myPeerId,
-        }));
+          ws.onopen = () => resolve();
 
-        this.connected = true;
-        this.startPingLoop();
-        this.notifyConnection(this.myPeerId, true);
+          ws.onerror = (err: Event) => {
+            reject(new Error(`WebSocket error: ${JSON.stringify(err)}`));
+          };
 
-        // Останавливаем таймер переподключения при успехе
-        if (this.reconnectTimer) {
-          clearInterval(this.reconnectTimer);
-          this.reconnectTimer = null;
-        }
-      };
+          ws.onclose = () => {
+            reject(new Error('WebSocket closed before open'));
+          };
+        }),
+        RELAY_CONNECT_TIMEOUT_MS,
+        'WebSocket connect to relay',
+      );
 
+      // Соединение установлено — регистрируемся на релее
+      console.warn('[GsmTransport] WebSocket подключён к релею');
+
+      this.ws.send(JSON.stringify({
+        type: 'relay_register',
+        peerId: this.myPeerId,
+      }));
+
+      this.connected = true;
+      this.startPingLoop();
+      this.notifyConnection(this.myPeerId, true);
+
+      if (this.reconnectTimer) {
+        clearInterval(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+
+      // Навешиваем обработчики сообщений и отключения
       this.ws.onmessage = (event: WebSocketMessageEvent) => {
         this.handleRelayMessage(event.data);
       };
@@ -176,6 +204,8 @@ class GsmTransportImpl implements ITransport {
       };
     } catch (err) {
       console.warn('[GsmTransport] Ошибка подключения к релею:', err);
+      this.ws?.close();
+      this.ws = null;
     }
   }
 

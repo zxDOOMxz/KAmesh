@@ -96,6 +96,15 @@ export const NICKNAME_ANNOUNCE_INTERVAL_MS = 60_000;
 /** Время неактивности после которого контакт считается офлайн (мс) */
 export const CONTACT_OFFLINE_TIMEOUT_MS = 180_000;
 
+/** Таймаут BLE-подключения (мс) */
+export const BLE_CONNECT_TIMEOUT_MS = 15_000;
+
+/** Таймаут WebSocket-подключения к релею (мс) */
+export const RELAY_CONNECT_TIMEOUT_MS = 10_000;
+
+/** Таймаут TCP-подключения WiFi-транспорта (мс) */
+export const WIFI_TCP_CONNECT_TIMEOUT_MS = 10_000;
+
 /** Порт TCP для WiFi-транспорта */
 export const WIFI_TCP_PORT = 4404;
 

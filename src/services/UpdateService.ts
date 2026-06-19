@@ -143,7 +143,8 @@ class UpdateServiceClass {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const totalChunks = Math.ceil(fileInfo.size / UPDATE_CHUNK_SIZE);
+      const chunkSizeB64 = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
+      const totalChunks = Math.ceil(this.localApkBase64.length / chunkSizeB64);
 
       // Вычисляем SHA-256 хеш файла
       const fileHash = this.computeHashBase64(this.localApkBase64);
@@ -391,15 +392,12 @@ class UpdateServiceClass {
       if (request.manifestVersionCode !== this.localManifest.versionCode) return;
 
       const totalChunks = this.localManifest.totalChunks;
+      const chunkSizeB64 = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
 
       for (let i = request.fromIndex; i <= request.toIndex && i < totalChunks; i++) {
-        const startOffset = i * UPDATE_CHUNK_SIZE;
-        const base64Len = this.localApkBase64.length;
-        // В base64 каждый байт кодируется как ~1.33 символа
-        // chunkSize байт = chunkSize * 4/3 символов base64
-        const chunkBase64Len = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
-        const chunkEnd = Math.min(startOffset + chunkBase64Len, base64Len);
-        const chunkData = this.localApkBase64.slice(startOffset, chunkEnd);
+        const b64Start = i * chunkSizeB64;
+        const b64End = Math.min(b64Start + chunkSizeB64, this.localApkBase64.length);
+        const chunkData = this.localApkBase64.slice(b64Start, b64End);
 
         const updateChunk: UpdateChunk = {
           manifestVersionCode: request.manifestVersionCode,
@@ -550,14 +548,8 @@ class UpdateServiceClass {
 
   private computeHashBase64(base64Data: string): string {
     try {
-      // Декодируем base64 в байты
-      const binaryStr = atob(base64Data);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
-
-      const hashBytes = sha256(bytes);
+      const rawBytes = base64Decode(base64Data);
+      const hashBytes = sha256(rawBytes);
       return bytesToHex(hashBytes);
     } catch (err) {
       console.warn('[UpdateService] Ошибка вычисления хеша:', err);
@@ -574,6 +566,29 @@ class UpdateServiceClass {
   isInitialized(): boolean {
     return this.initialized;
   }
+}
+
+// ============================================================
+// Hermes-compatible base64 decode
+// ============================================================
+
+const B64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function base64Decode(b64: string): Uint8Array {
+  const sanitized = b64.replace(/[^A-Za-z0-9+/]/g, '');
+  const len = Math.floor((sanitized.length * 3) / 4);
+  const uint8 = new Uint8Array(len);
+  let j = 0;
+  for (let i = 0; i < sanitized.length; i += 4) {
+    const a = B64_TABLE.indexOf(sanitized[i]);
+    const b = B64_TABLE.indexOf(sanitized[i + 1]);
+    const c = B64_TABLE.indexOf(sanitized[i + 2]);
+    const d = B64_TABLE.indexOf(sanitized[i + 3]);
+    uint8[j++] = (a << 2) | (b >> 4);
+    if (c !== -1) uint8[j++] = ((b & 15) << 4) | (c >> 2);
+    if (d !== -1) uint8[j++] = ((c & 3) << 6) | d;
+  }
+  return uint8.slice(0, j);
 }
 
 /** Единственный экземпляр UpdateService */

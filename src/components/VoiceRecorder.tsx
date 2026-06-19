@@ -18,6 +18,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopRef = useRef<() => void>(() => {});
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -39,11 +40,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           useNativeDriver: true,
         }),
       ]).start(() => {
-        if (isRecording) pulse();
+        if (isRecordingRef.current) pulse();
       });
     };
     pulse();
-  }, [isRecording, pulseAnim]);
+  }, [pulseAnim]);
 
   const handleStopRecording = useCallback(async () => {
     try {
@@ -52,6 +53,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         timerRef.current = null;
       }
       setIsRecording(false);
+      isRecordingRef.current = false;
       pulseAnim.setValue(1);
 
       if (recordedPath && duration > 0) {
@@ -68,6 +70,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const handleStartRecording = useCallback(async () => {
     try {
       setIsRecording(true);
+      isRecordingRef.current = true;
       setDuration(0);
       startPulse();
 

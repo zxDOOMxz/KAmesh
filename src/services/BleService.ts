@@ -12,7 +12,8 @@ import BleManager, {
   ScanOptions,
 } from 'react-native-ble-manager';
 import { NativeEventEmitter, NativeModules, Platform, PermissionsAndroid } from 'react-native';
-import { BLE_MTU, BLE_PAYLOAD_LIMIT, BLE_SCAN_DURATION_MS, BLE_SCAN_INTERVAL_MS } from '../constants';
+import { BLE_MTU, BLE_CONNECT_TIMEOUT_MS, BLE_PAYLOAD_LIMIT, BLE_SCAN_DURATION_MS, BLE_SCAN_INTERVAL_MS } from '../constants';
+import { withTimeout } from '../utils/timeout';
 import { BLE_SERVICE_UUID, BLE_TX_CHAR_UUID, BLE_RX_CHAR_UUID } from '../types';
 
 // ============================================================
@@ -174,21 +175,35 @@ class BleServiceClass {
     try {
       if (this.connectedDevices.has(peripheralId)) return;
 
-      await BleManager.connect(peripheralId);
-      await BleManager.retrieveServices(peripheralId);
+      await withTimeout(
+        BleManager.connect(peripheralId),
+        BLE_CONNECT_TIMEOUT_MS,
+        `BLE connect to ${peripheralId}`,
+      );
+      await withTimeout(
+        BleManager.retrieveServices(peripheralId),
+        BLE_CONNECT_TIMEOUT_MS,
+        `BLE retrieve services ${peripheralId}`,
+      );
 
       // Запрашиваем MTU (Android)
       if (Platform.OS === 'android') {
         try {
-          await BleManager.requestMTU(peripheralId, BLE_MTU);
-        } catch { /* не все устройства поддерживают */ }
+          await withTimeout(
+            BleManager.requestMTU(peripheralId, BLE_MTU),
+            5_000,
+            `BLE requestMTU ${peripheralId}`,
+          );
+        } catch (err) {
+          console.warn(`[BleService] MTU request failed for ${peripheralId}:`, err);
+        }
       }
 
       // Подписываемся на уведомления от RX-характеристики
-      await BleManager.startNotification(
-        peripheralId,
-        BLE_SERVICE_UUID,
-        BLE_RX_CHAR_UUID,
+      await withTimeout(
+        BleManager.startNotification(peripheralId, BLE_SERVICE_UUID, BLE_RX_CHAR_UUID),
+        5_000,
+        `BLE startNotification ${peripheralId}`,
       );
 
       this.connectedDevices.add(peripheralId);
@@ -356,7 +371,7 @@ class BleServiceClass {
       for (let i = 0; i < uint8.length; i++) {
         binary += String.fromCharCode(uint8[i]);
       }
-      const rawData = btoa(binary);
+      const rawData = bytesToBase64(uint8);
 
       // Проверяем, является ли сообщение фрагментом
       // Формат: sessionId|index|total|data
@@ -369,7 +384,8 @@ class BleServiceClass {
         this.processFragment(sessionId, index, total, chunkData, peripheral);
       } else {
         // Цельное сообщение — уведомляем обработчики
-        const decoded = atob(rawData);
+        const decodedBytes = base64ToBytes(rawData);
+        const decoded = new TextDecoder().decode(decodedBytes);
         this.notifyDataHandlers(decoded, peripheral);
       }
     } catch (err) {
@@ -408,7 +424,8 @@ class BleServiceClass {
       // Если все фрагменты получены — собираем и уведомляем
       if (buffer.received === buffer.total) {
         const assembled = buffer.chunks.join('');
-        const decoded = atob(assembled);
+        const decodedBytes = base64ToBytes(assembled);
+        const decoded = new TextDecoder().decode(decodedBytes);
 
         this.fragmentBuffer.delete(sessionId);
         this.notifyDataHandlers(decoded, peripheral);
@@ -506,21 +523,54 @@ class BleServiceClass {
 // Вспомогательные функции
 // ============================================================
 
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let result = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const c = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    result += BASE64_CHARS[a >> 2];
+    result += BASE64_CHARS[((a & 3) << 4) | (b >> 4)];
+    if (i + 1 < bytes.length) {
+      result += BASE64_CHARS[((b & 15) << 2) | (c >> 6)];
+    } else {
+      result += '=';
+    }
+    if (i + 2 < bytes.length) {
+      result += BASE64_CHARS[c & 63];
+    } else {
+      result += '=';
+    }
+  }
+  return result;
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const sanitized = b64.replace(/[^A-Za-z0-9+/]/g, '');
+  const len = Math.floor((sanitized.length * 3) / 4);
+  const uint8 = new Uint8Array(len);
+  let j = 0;
+  for (let i = 0; i < sanitized.length; i += 4) {
+    const a = BASE64_CHARS.indexOf(sanitized[i]);
+    const b = BASE64_CHARS.indexOf(sanitized[i + 1]);
+    const c = BASE64_CHARS.indexOf(sanitized[i + 2]);
+    const d = BASE64_CHARS.indexOf(sanitized[i + 3]);
+    uint8[j++] = (a << 2) | (b >> 4);
+    if (c !== -1) uint8[j++] = ((b & 15) << 4) | (c >> 2);
+    if (d !== -1) uint8[j++] = ((c & 3) << 6) | d;
+  }
+  return uint8.slice(0, j);
+}
+
 async function stringToBase64(str: string): Promise<string> {
   const uint8 = new TextEncoder().encode(str);
-  let binary = '';
-  for (let i = 0; i < uint8.length; i++) {
-    binary += String.fromCharCode(uint8[i]);
-  }
-  return btoa(binary);
+  return bytesToBase64(uint8);
 }
 
 async function base64ToArrayBuffer(b64: string): Promise<ArrayBuffer> {
-  const binary = atob(b64);
-  const uint8 = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    uint8[i] = binary.charCodeAt(i);
-  }
+  const uint8 = base64ToBytes(b64);
   return uint8.buffer;
 }
 

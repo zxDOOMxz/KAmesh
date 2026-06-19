@@ -19,6 +19,7 @@ import { addChatMessage, getChatMessages } from '../services/StorageService';
 import { MessageType, ChatMessage, DeliveryStatus, ContactEntry, ConferenceInfo, ConferenceParticipant } from '../types';
 import { ShareService, ShareEvent } from '../services/ShareService';
 import { SoundService } from '../services/SoundService';
+import { MessageBubble } from '../components/MessageBubble';
 
 type Screen = 'menu' | 'contacts' | 'chat' | 'voice_call' | 'conf_list' | 'conf_create' | 'conf_room' | 'new_contact' | 'share_contacts' | 'share_progress' | 'share_incoming';
 
@@ -61,7 +62,7 @@ export function ChatScreen() {
     });
     setContacts(ContactService.getContacts());
 
-    MeshService.onPacket((packet) => {
+    const unsubPacket = MeshService.onPacket((packet) => {
       if (packet.type === MessageType.TEXT && !packet.isBroadcast) {
         const msg: ChatMessage = {
           id: packet.packetId,
@@ -130,7 +131,7 @@ export function ChatScreen() {
       }
     });
 
-    return () => { unsubContact(); unsubConf(); unsubShare(); };
+    return () => { unsubContact(); unsubPacket(); unsubConf(); unsubShare(); };
   }, []);
 
   // ============================
@@ -458,38 +459,26 @@ export function ChatScreen() {
   );
 
   const renderShareProgress = () => (
-    <View style={[s.contactsWrap, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
-      <Text style={{ color: COLORS.textPrimary, fontSize: 24, marginBottom: 16 }}>📤</Text>
-      <Text style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 24 }}>
-        {shareStatus}
-      </Text>
-      <View style={{ width: '80%', height: 8, backgroundColor: COLORS.surfaceVariant, borderRadius: 4, overflow: 'hidden' }}>
-        <View style={{ width: `${Math.min(shareProgress, 100)}%`, height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 }} />
+    <View style={s.shareProgressWrap}>
+      <Text style={s.shareIcon}>📤</Text>
+      <Text style={s.shareStatus}>{shareStatus}</Text>
+      <View style={s.progressTrack}>
+        <View style={[s.progressFill, { width: `${Math.min(shareProgress, 100)}%` }]} />
       </View>
-      <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginTop: 8 }}>{shareProgress}%</Text>
+      <Text style={s.progressLabel}>{shareProgress}%</Text>
     </View>
   );
 
   const renderShareIncoming = () => (
-    <View style={[s.contactsWrap, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
-      <Text style={{ color: COLORS.textPrimary, fontSize: 40, marginBottom: 16 }}>📲</Text>
-      <Text style={{ color: COLORS.textPrimary, fontSize: 18, fontWeight: '600', textAlign: 'center', marginBottom: 8 }}>
-        {incomingShareNick} хочет поделиться приложением
-      </Text>
-      <Text style={{ color: COLORS.textSecondary, fontSize: 14, textAlign: 'center', marginBottom: 32 }}>
-        Вы получите KAmesh напрямую через mesh-сеть
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 16 }}>
-        <TouchableOpacity
-          style={[s.goBtn, { backgroundColor: COLORS.error, flex: 1 }]}
-          onPress={rejectIncomingShare}
-        >
+    <View style={s.shareProgressWrap}>
+      <Text style={s.shareIconBig}>📲</Text>
+      <Text style={s.shareTitle}>{incomingShareNick} хочет поделиться приложением</Text>
+      <Text style={s.shareDesc}>Вы получите KAmesh напрямую через mesh-сеть</Text>
+      <View style={s.shareActions}>
+        <TouchableOpacity style={s.rejectBtn} onPress={rejectIncomingShare}>
           <Text style={s.goBtnText}>Отклонить</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.goBtn, { flex: 1 }]}
-          onPress={acceptIncomingShare}
-        >
+        <TouchableOpacity style={s.acceptBtn} onPress={acceptIncomingShare}>
           <Text style={s.goBtnText}>Принять</Text>
         </TouchableOpacity>
       </View>
@@ -497,7 +486,7 @@ export function ChatScreen() {
   );
 
   const renderChat = () => (
-    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+    <View style={s.chatWrap}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => setScreen('menu')}><Text style={s.back}>{'< Назад'}</Text></TouchableOpacity>
         <Text style={s.headerTitle}>{chatPeerName}</Text>
@@ -505,13 +494,13 @@ export function ChatScreen() {
       <FlatList
         data={messages}
         keyExtractor={m => m.id}
-        style={{ flex: 1 }}
+        style={s.chatList}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={true}
         renderItem={({ item }) => (
-          <View style={[s.bubble, item.isIncoming ? s.bubbleIn : s.bubbleOut]}>
-            <Text style={[s.bubbleText, { color: item.isIncoming ? COLORS.textPrimary : COLORS.onPrimary }]}>
-              {item.text}
-            </Text>
-          </View>
+          <MessageBubble message={item} />
         )}
       />
       <View style={s.inputBar}>
@@ -613,14 +602,26 @@ const s = StyleSheet.create({
   toggleText: { color: COLORS.primary, fontSize: 15, textAlign: 'center' },
 
   // chat
-  bubble: { maxWidth: '80%', padding: 12, borderRadius: 14, margin: 4, marginHorizontal: 12 },
-  bubbleIn: { alignSelf: 'flex-start', backgroundColor: COLORS.bubbleReceived },
-  bubbleOut: { alignSelf: 'flex-end', backgroundColor: COLORS.bubbleSent },
-  bubbleText: { fontSize: 15, lineHeight: 20 },
+  chatWrap: { flex: 1, backgroundColor: COLORS.background },
+  chatList: { flex: 1 },
   inputBar: { flexDirection: 'row', padding: 8, backgroundColor: COLORS.surface, borderTopWidth: 1, borderColor: COLORS.border },
   chatInput: { flex: 1, backgroundColor: COLORS.surfaceVariant, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, color: COLORS.textPrimary, marginRight: 8 },
   sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
   sendBtnText: { color: COLORS.onPrimary, fontSize: 18, fontWeight: '700' },
+
+  // share
+  shareProgressWrap: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  shareIcon: { color: COLORS.textPrimary, fontSize: 24, marginBottom: 16 },
+  shareIconBig: { color: COLORS.textPrimary, fontSize: 40, marginBottom: 16 },
+  shareStatus: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 24 },
+  shareTitle: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
+  shareDesc: { color: COLORS.textSecondary, fontSize: 14, textAlign: 'center', marginBottom: 32 },
+  shareActions: { flexDirection: 'row', gap: 16 },
+  progressTrack: { width: '80%', height: 8, backgroundColor: COLORS.surfaceVariant, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 },
+  progressLabel: { color: COLORS.textSecondary, fontSize: 13, marginTop: 8 },
+  rejectBtn: { backgroundColor: COLORS.error, borderRadius: 12, padding: 14, alignItems: 'center', flex: 1 },
+  acceptBtn: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 14, alignItems: 'center', flex: 1 },
 
   // ptt
   pttBar: { flexDirection: 'row', justifyContent: 'center', padding: 8, backgroundColor: COLORS.surface, borderTopWidth: 1, borderColor: COLORS.border },

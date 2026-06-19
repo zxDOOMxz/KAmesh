@@ -84,13 +84,29 @@ function generateIcqWav(): Uint8Array {
   return new Uint8Array(buffer);
 }
 
+const BASE64_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
 /** Преобразовать Uint8Array в base64 */
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  let result = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const c = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    result += BASE64_TABLE[a >> 2];
+    result += BASE64_TABLE[((a & 3) << 4) | (b >> 4)];
+    if (i + 1 < bytes.length) {
+      result += BASE64_TABLE[((b & 15) << 2) | (c >> 6)];
+    } else {
+      result += '=';
+    }
+    if (i + 2 < bytes.length) {
+      result += BASE64_TABLE[c & 63];
+    } else {
+      result += '=';
+    }
   }
-  return btoa(binary);
+  return result;
 }
 
 export function getIcqWavBase64(): string {

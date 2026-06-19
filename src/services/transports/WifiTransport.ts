@@ -15,6 +15,7 @@ import TcpSocket from 'react-native-tcp-socket';
 import UdpSockets from 'react-native-udp';
 import type { ITransport, TransportDataHandler, TransportConnectionHandler } from './ITransport';
 import type { NodeId } from '../../types';
+import { WIFI_TCP_CONNECT_TIMEOUT_MS } from '../../constants';
 
 // ============================================================
 // Константы
@@ -50,6 +51,9 @@ class WifiTransportImpl implements ITransport {
   private discoveryTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectTimer: ReturnType<typeof setInterval> | null = null;
 
+  /** Буферы приёма для каждого сокета (binpack: length-prefix framing) */
+  private recvBuffers = new Map<any, Buffer>();
+
   private dataHandlers: TransportDataHandler[] = [];
   private connectionHandlers: TransportConnectionHandler[] = [];
 
@@ -81,11 +85,16 @@ class WifiTransportImpl implements ITransport {
   }
 
   async send(peerId: NodeId, data: string): Promise<void> {
-    const client = this.clients.get(peerId);
-    if (!client) {
-      throw new Error(`[WifiTransport] Нет TCP-соединения с ${peerId}`);
+    try {
+      const client = this.clients.get(peerId);
+      if (!client) {
+        throw new Error(`[WifiTransport] Нет TCP-соединения с ${peerId}`);
+      }
+      await this.writeToSocket(client, data);
+    } catch (err) {
+      console.warn(`[WifiTransport] Ошибка отправки peerId=${peerId}:`, err);
+      throw err;
     }
-    await this.writeToSocket(client, data);
   }
 
   async broadcast(data: string): Promise<void> {
@@ -136,8 +145,8 @@ class WifiTransportImpl implements ITransport {
         console.warn(`[WifiTransport] TCP-подключение от ${remoteAddr}`);
 
         client.on('data', (rawData: string | Buffer) => {
-          const data = typeof rawData === 'string' ? rawData : rawData.toString('utf-8');
-          this.handleTcpData(client, data);
+          const chunk = typeof rawData === 'string' ? Buffer.from(rawData, 'utf-8') : rawData;
+          this.onSocketData(client, chunk);
         });
 
         client.on('close', () => {
@@ -251,12 +260,20 @@ class WifiTransportImpl implements ITransport {
         },
       );
 
+      // Таймаут TCP-подключения
+      const connectTimer = setTimeout(() => {
+        client.destroy();
+        this.pendingConnections.delete(connKey);
+        console.warn(`[WifiTransport] Таймаут подключения к ${peerId} (${WIFI_TCP_CONNECT_TIMEOUT_MS}ms)`);
+      }, WIFI_TCP_CONNECT_TIMEOUT_MS);
+
       client.on('data', (rawData: string | Buffer) => {
-        const data = typeof rawData === 'string' ? rawData : rawData.toString('utf-8');
-        this.handleTcpData(client, data);
+        const chunk = typeof rawData === 'string' ? Buffer.from(rawData, 'utf-8') : rawData;
+        this.onSocketData(client, chunk);
       });
 
       client.on('close', () => {
+        clearTimeout(connectTimer);
         this.pendingConnections.delete(connKey);
         if (this.clients.get(peerId) === client) {
           this.clients.delete(peerId);
@@ -265,6 +282,7 @@ class WifiTransportImpl implements ITransport {
       });
 
       client.on('error', (err: Error) => {
+        clearTimeout(connectTimer);
         this.pendingConnections.delete(connKey);
         console.warn(`[WifiTransport] Ошибка подключения к ${peerId}:`, err.message);
         if (this.clients.get(peerId) === client) {
@@ -294,13 +312,38 @@ class WifiTransportImpl implements ITransport {
   // Обработка TCP-данных
   // ==========================================================
 
-  private handleTcpData(socket: any, data: string): void {
+  private onSocketData(socket: any, chunk: Buffer): void {
     try {
+      // Инициализируем буфер для сокета
+      if (!this.recvBuffers.has(socket)) {
+        this.recvBuffers.set(socket, Buffer.alloc(0));
+      }
+      this.recvBuffers.set(socket, Buffer.concat([this.recvBuffers.get(socket)!, chunk]));
+
       const peerId = this.findPeerIdBySocket(socket);
       if (!peerId) return;
 
-      for (const handler of this.dataHandlers) {
-        try { handler(data, peerId); } catch { /* ignore */ }
+      const buf = this.recvBuffers.get(socket)!;
+      let offset = 0;
+
+      while (offset + 4 <= buf.length) {
+        const msgLen = buf.readUInt32BE(offset);
+        const totalLen = 4 + msgLen;
+        if (offset + totalLen > buf.length) break;
+
+        const msgBuf = buf.subarray(offset + 4, offset + totalLen);
+        const data = msgBuf.toString('utf-8');
+
+        for (const handler of this.dataHandlers) {
+          try { handler(data, peerId); } catch { /* ignore */ }
+        }
+
+        offset += totalLen;
+      }
+
+      // Сохраняем остаток
+      if (offset > 0) {
+        this.recvBuffers.set(socket, buf.subarray(offset));
       }
     } catch (err) {
       console.warn('[WifiTransport] Ошибка обработки TCP-данных:', err);
@@ -310,7 +353,10 @@ class WifiTransportImpl implements ITransport {
   private async writeToSocket(socket: any, data: string): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        socket.write(data, (err?: Error | null) => {
+        const payload = Buffer.from(data, 'utf-8');
+        const header = Buffer.alloc(4);
+        header.writeUInt32BE(payload.length, 0);
+        socket.write(Buffer.concat([header, payload]), (err?: Error | null) => {
           if (err) reject(err);
           else resolve();
         });
@@ -332,6 +378,7 @@ class WifiTransportImpl implements ITransport {
   }
 
   private removeClientBySocket(socket: any): void {
+    this.recvBuffers.delete(socket);
     for (const [peerId, s] of this.clients) {
       if (s === socket) {
         this.clients.delete(peerId);

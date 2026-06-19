@@ -47,6 +47,7 @@ type PacketHandler = (packet: MeshPacket, relayId: NodeId) => void;
 
 /** Множество ID уже обработанных пакетов (анти-петля) */
 const processedPackets = new Set<string>();
+const MAX_PROCESSED_PACKETS = 10_000;
 
 /** Типы пакетов, которые подлежат DTN-хранению */
 function isDtnEligible(type: MessageType): boolean {
@@ -72,9 +73,8 @@ function isControlPacket(type: MessageType): boolean {
     type === MessageType.PING ||
     type === MessageType.PONG ||
     type === MessageType.DELIVERY_ACK ||
+    type === MessageType.KEY_EXCHANGE ||
     type === MessageType.UPDATE_MANIFEST ||
-    type === MessageType.UPDATE_CHUNK_REQUEST ||
-    type === MessageType.UPDATE_CHUNK ||
     type === MessageType.NICKNAME_REGISTER ||
     type === MessageType.NICKNAME_ACCEPT ||
     type === MessageType.NICKNAME_REJECT ||
@@ -82,9 +82,7 @@ function isControlPacket(type: MessageType): boolean {
     type === MessageType.NICKNAME_QUERY ||
     type === MessageType.NICKNAME_LIST ||
     type === MessageType.CONFERENCE_CREATE ||
-    type === MessageType.CONFERENCE_JOIN ||
     type === MessageType.CONFERENCE_LEAVE ||
-    type === MessageType.CONFERENCE_PARTICIPANTS ||
     type === MessageType.CONFERENCE_AUDIO
   );
 }
@@ -187,7 +185,9 @@ class MeshServiceClass {
         if (devId === this.myNodeId) continue;
         try {
           await TransportManager.send(devId, packetJson);
-        } catch { /* ignore */ }
+        } catch (err) {
+          console.warn(`[MeshService] sendMessage->send ${devId}:`, err);
+        }
       }
 
       // Если получатель не в сети — сохраняем в очередь
@@ -217,12 +217,16 @@ class MeshServiceClass {
       try {
         packet = JSON.parse(data);
       } catch {
+        // невалидный JSON — не MeshPacket, игнорируем
         return;
       }
 
       if (!packet.packetId || !packet.sourceId) return;
       if (processedPackets.has(packet.packetId)) return;
 
+      if (processedPackets.size >= MAX_PROCESSED_PACKETS) {
+        processedPackets.clear();
+      }
       processedPackets.add(packet.packetId);
       setTimeout(() => processedPackets.delete(packet.packetId), 60_000);
 
@@ -300,9 +304,13 @@ class MeshServiceClass {
         if (devId === this.myNodeId) continue;
         try {
           await TransportManager.send(devId, ackJson);
-        } catch { /* ignore */ }
+        } catch (err) {
+          console.warn(`[MeshService] sendAck->send ${devId}:`, err);
+        }
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[MeshService] sendAck error:', err);
+    }
   }
 
   // ==========================================================
@@ -328,14 +336,18 @@ class MeshServiceClass {
         }
         try {
           await TransportManager.send(devId, packetJson);
-        } catch { /* ignore */ }
+        } catch (err) {
+          console.warn(`[MeshService] relayPacket->send ${devId}:`, err);
+        }
       }
 
       // При живом flooding-ретраснляции тоже сохраняем в DTN
       if (isLiveFlood && isDtnEligible(packet.type) && packet.targetId !== this.myNodeId) {
         addRelayPacket({ ...packet, relayId: this.myNodeId });
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[MeshService] relayPacket error:', err);
+    }
   }
 
   // ==========================================================
@@ -363,13 +375,17 @@ class MeshServiceClass {
           bundle.targetId === neighborId ||
           neighborKnowsTarget
         ) {
-          const freshened = { ...bundle, ttl: MESH_TTL_MAX, relayId: this.myNodeId };
+          const freshened = { ...bundle, relayId: this.myNodeId };
           try {
             await TransportManager.send(neighborId, JSON.stringify(freshened));
-          } catch { /* ignore */ }
+          } catch (err) {
+            console.warn(`[MeshService] flushDtn->send ${neighborId}:`, err);
+          }
         }
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[MeshService] flushDtnToNeighbor error:', err);
+    }
   }
 
   /** Раз в DTN_CHECK_INTERVAL_MS пытаемся продвинуть бандлы */
@@ -394,28 +410,21 @@ class MeshServiceClass {
           // Если появился путь к получателю — ретранслируем
           const routeToTarget = this.routeTable.find(r => r.nodeId === bundle.targetId);
           if (routeToTarget) {
-            const freshened = { ...bundle, ttl: MESH_TTL_MAX, relayId: this.myNodeId };
+            const freshened = { ...bundle, relayId: this.myNodeId };
             const pktJson = JSON.stringify(freshened);
             for (const devId of connectedPeers) {
               if (devId === this.myNodeId || devId === bundle.sourceId) continue;
               try {
                 await TransportManager.send(devId, pktJson);
-              } catch { /* ignore */ }
-            }
-          }
-
-          // Если кто-то рядом — тоже пробрасываем
-          for (const devId of connectedPeers) {
-            if (
-              devId === this.myNodeId ||
-              devId === bundle.sourceId ||
-              bundle.targetId === devId
-            ) {
-              continue;
+              } catch (err) {
+                console.warn(`[MeshService] DTN loop->send ${devId}:`, err);
+              }
             }
           }
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.warn('[MeshService] DTN processing loop error:', err);
+      }
     }, DTN_CHECK_INTERVAL_MS);
   }
 
@@ -455,7 +464,9 @@ class MeshServiceClass {
       }
 
       saveRouteTable(this.routeTable);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[MeshService] addOrUpdateRoute save error:', err);
+    }
   }
 
   getRouteTable(): RouteEntry[] {
@@ -486,9 +497,13 @@ class MeshServiceClass {
         const pingJson = JSON.stringify(ping);
         for (const devId of TransportManager.getConnectedPeers()) {
           if (devId === this.myNodeId) continue;
-          try { await TransportManager.send(devId, pingJson); } catch { /* ignore */ }
+          try { await TransportManager.send(devId, pingJson); } catch (err) {
+            console.warn(`[MeshService] ping->send ${devId}:`, err);
+          }
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.warn('[MeshService] ping loop error:', err);
+      }
     }, PING_INTERVAL_MS);
   }
 
@@ -522,10 +537,14 @@ class MeshServiceClass {
             });
             removePendingMessage(msg.packetId);
             console.warn(`[MeshService] Pending-сообщение ${msg.packetId} доставлено`);
-          } catch { /* повторная попытка позже */ }
+          } catch (err) {
+            console.warn(`[MeshService] pending queue send ${msg.packetId}:`, err);
+          }
         }
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[MeshService] processPendingQueue error:', err);
+    }
   }
 
   // ==========================================================
@@ -541,7 +560,9 @@ class MeshServiceClass {
 
   private notifyPacketHandlers(packet: MeshPacket, relayId: NodeId): void {
     for (const handler of this.packetHandlers) {
-      try { handler(packet, relayId); } catch { /* ignore */ }
+      try { handler(packet, relayId); } catch (err) {
+        console.warn('[MeshService] packet handler error:', err);
+      }
     }
   }
 

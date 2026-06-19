@@ -42,6 +42,9 @@ class ConferenceServiceClass {
   /** Конференция, в которой мы сейчас участвуем */
   private activeConferenceId: string | null = null;
 
+  /** Пароли конференций (хранятся только у создателя) */
+  private conferencePasswords = new Map<string, string>();
+
   /** Участники активной конференции */
   private participants = new Map<NodeId, ConferenceParticipant>();
 
@@ -65,6 +68,7 @@ class ConferenceServiceClass {
     }
     this.knownConferences.clear();
     this.participants.clear();
+    this.conferencePasswords.clear();
     this.handlers = [];
   }
 
@@ -100,11 +104,14 @@ class ConferenceServiceClass {
     this.knownConferences.set(conferenceId, conference);
     this.activeConferenceId = conferenceId;
     this.participants.set(this.myNodeId, conference.participants![0]);
+    if (password) {
+      this.conferencePasswords.set(conferenceId, password);
+    }
 
-    // Рекламируем в mesh
+    // Рекламируем в mesh (без пароля!)
     await MeshService.sendMessage(
       MessageType.CONFERENCE_CREATE,
-      JSON.stringify({ ...conference, password }), // пароль только для проверки, не храним
+      JSON.stringify(conference),
       'broadcast',
     );
 
@@ -174,6 +181,7 @@ class ConferenceServiceClass {
 
     this.activeConferenceId = null;
     this.participants.clear();
+    this.conferencePasswords.delete(conferenceId);
 
     this.notify({ type: 'left' });
     console.warn(`[ConferenceService] Покинул конференцию`);
@@ -298,7 +306,26 @@ class ConferenceServiceClass {
       const conference = this.knownConferences.get(request.conferenceId);
       if (!conference) return;
 
-      // Для открытых — сразу пускаем
+      // Проверяем пароль
+      if (conference.hasPassword) {
+        const myPassword = this.conferencePasswords.get(request.conferenceId);
+        if (!myPassword || request.password !== myPassword) {
+          // Отправляем отказ
+          const response: ConferenceJoinResponse = {
+            conferenceId: request.conferenceId,
+            accepted: false,
+            participants: [],
+          };
+          await MeshService.sendMessage(
+            MessageType.CONFERENCE_PARTICIPANTS,
+            JSON.stringify(response),
+            request.requesterId,
+          );
+          return;
+        }
+      }
+
+      // Для открытых (или правильный пароль) — пускаем
       const participant: ConferenceParticipant = {
         nickname: request.requesterNickname,
         nodeId: request.requesterId,

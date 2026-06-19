@@ -8,11 +8,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "kamesh",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0D1117"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mash.offline",
@@ -47,8 +42,9 @@
         "ACCESS_COARSE_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_CONNECTED_DEVICE",
-        "RECORD_AUDIO",
-        "POST_NOTIFICATIONS"
+        "FOREGROUND_SERVICE_DATA_SYNC",
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO"
       ],
       "blockedPermissions": [
         "android.permission.ACCESS_BACKGROUND_LOCATION",

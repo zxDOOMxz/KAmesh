@@ -155,7 +155,8 @@ class ShareServiceClass {
     }
 
     const sessionId = `share-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const totalChunks = Math.ceil(this.localApkSize / UPDATE_CHUNK_SIZE);
+    const chunkSizeB64 = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
+    const totalChunks = Math.ceil(this.localApkSize / chunkSizeB64);
 
     // Отправляем запрос пиру
     const requestPayload = JSON.stringify({
@@ -295,14 +296,14 @@ class ShareServiceClass {
     if (!this.activeTransfer || this.activeTransfer.direction !== 'send') return;
 
     const { apkBase64, totalChunks, peerId, sessionId } = this.activeTransfer;
+    const chunkSizeB64 = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
     const batchSize = 5;
     const endIndex = Math.min(fromIndex + batchSize, totalChunks);
 
     for (let i = fromIndex; i < endIndex; i++) {
-      const startOffset = i * UPDATE_CHUNK_SIZE;
-      const chunkBase64Len = Math.ceil(UPDATE_CHUNK_SIZE * 4 / 3);
-      const chunkEnd = Math.min(startOffset + chunkBase64Len, apkBase64.length);
-      const chunkData = apkBase64.slice(startOffset, chunkEnd);
+      const b64Start = i * chunkSizeB64;
+      const b64End = Math.min(b64Start + chunkSizeB64, apkBase64.length);
+      const chunkData = apkBase64.slice(b64Start, b64End);
 
       const chunkPayload = JSON.stringify({
         sessionId,
