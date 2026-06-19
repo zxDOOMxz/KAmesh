@@ -15,6 +15,7 @@
     "build:prod": "eas build --platform all --profile production",
     "build:android": "eas build --platform android --profile production",
     "build:ios": "eas build --platform ios --profile production",
+    "relay": "cd server && npm start",
     "rustore:apk": "eas build --platform android --profile rustore-apk",
     "rustore:aab": "eas build --platform android --profile rustore-aab",
     "rustore:submit": "eas submit --platform android --profile rustore",

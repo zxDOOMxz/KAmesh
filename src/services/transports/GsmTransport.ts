@@ -10,13 +10,8 @@ import NetInfo from '@react-native-community/netinfo';
 import type { ITransport, TransportDataHandler, TransportConnectionHandler } from './ITransport';
 import type { NodeId } from '../../types';
 import { withTimeout } from '../../utils/timeout';
-import { RELAY_CONNECT_TIMEOUT_MS } from '../../constants';
+import { RELAY_URL, RELAY_CONNECT_TIMEOUT_MS } from '../../constants';
 
-// ============================================================
-// Константы (плейсхолдеры — заменить при деплое релея)
-// ============================================================
-
-const RELAY_URL = 'wss://mesh.kamesh.app/ws';
 const RELAY_RECONNECT_MS = 10_000;
 const PING_INTERVAL_MS = 30_000;
 
