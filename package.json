@@ -19,6 +19,7 @@
     "rustore:apk": "eas build --platform android --profile rustore-apk",
     "rustore:aab": "eas build --platform android --profile rustore-aab",
     "rustore:submit": "eas submit --platform android --profile rustore",
+    "postinstall": "patch-package",
     "rustore:keystore": "create-keystore.bat",
     "rustore:build": "build-rustore.bat"
   },
@@ -59,6 +60,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
+    "patch-package": "^8.0.1",
     "typescript": "~5.3.3"
   }
 }

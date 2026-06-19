@@ -1,0 +1,31 @@
+diff --git a/node_modules/react-native-udp/android/build.gradle b/node_modules/react-native-udp/android/build.gradle
+index 45247c7..f59c4d0 100644
+--- a/node_modules/react-native-udp/android/build.gradle
++++ b/node_modules/react-native-udp/android/build.gradle
+@@ -7,7 +7,7 @@ buildscript {
+     if (project == rootProject) {
+         repositories {
+             google()
+-            jcenter()
++            mavenCentral()
+         }
+         dependencies {
+             classpath 'com.android.tools.build:gradle:3.5.3'
+@@ -16,7 +16,7 @@ buildscript {
+ }
+ 
+ apply plugin: 'com.android.library'
+-apply plugin: 'maven'
++// maven plugin removed (incompatible with Gradle 8)
+ 
+ def DEFAULT_COMPILE_SDK_VERSION = 28
+ def DEFAULT_BUILD_TOOLS_VERSION = "28.0.3"
+@@ -57,7 +57,7 @@ repositories {
+         url "$rootDir/../node_modules/jsc-android/dist"
+     }
+     google()
+-    jcenter()
++    mavenCentral()
+ }
+ 
+ 
