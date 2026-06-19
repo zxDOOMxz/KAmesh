@@ -16,7 +16,14 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.mash.offline",
       "infoPlist": {
-        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral", "audio"],
+        "UIBackgroundModes": [
+          "bluetooth-central",
+          "bluetooth-peripheral",
+          "audio",
+          "bluetooth-central",
+          "bluetooth-peripheral",
+          "audio"
+        ],
         "NSBluetoothAlwaysUsageDescription": "KAmesh использует Bluetooth для офлайн-связи с другими устройствами",
         "NSBluetoothPeripheralUsageDescription": "KAmesh использует Bluetooth для передачи данных без интернета",
         "NSMicrophoneUsageDescription": "KAmesh использует микрофон для записи голосовых сообщений"
@@ -43,9 +50,29 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_CONNECTED_DEVICE",
         "RECORD_AUDIO",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "RECORD_AUDIO",
+        "POST_NOTIFICATIONS",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
       ],
       "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -57,7 +84,21 @@
           "data": {
             "scheme": "kamesh"
           },
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": {
+            "scheme": "kamesh"
+          },
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -67,23 +108,27 @@
         "react-native-ble-manager",
         {
           "isBackgroundEnabled": true,
-          "modes": ["peripheral", "central"],
+          "modes": [
+            "peripheral",
+            "central"
+          ],
           "bluetoothAlwaysPermission": true
         }
       ],
-      [
-        "react-native-background-actions",
-        {
-          "title": "KAmesh",
-          "text": "KAmesh: поиск устройств…",
-          "icon": "ic_scan",
-          "color": "#00AAFF",
-          "sticky": false
-        }
-      ]
+      "expo-asset"
     ],
     "extra": {
-      "cacheTTLHours": 24
+      "cacheTTLHours": 24,
+      "eas": {
+        "projectId": "b444d6bf-20c9-4059-b8a4-3981f02e920d"
+      }
+    },
+    "owner": "zxdoomxz",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b444d6bf-20c9-4059-b8a4-3981f02e920d"
     }
   }
 }
