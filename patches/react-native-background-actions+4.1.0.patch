@@ -1,0 +1,10 @@
+diff --git a/node_modules/react-native-background-actions/android/build.gradle b/node_modules/react-native-background-actions/android/build.gradle
+index a5edbb7..fd38ee7 100644
+--- a/node_modules/react-native-background-actions/android/build.gradle
++++ b/node_modules/react-native-background-actions/android/build.gradle
+@@ -21,4 +21,5 @@ android {
+ dependencies {
+     //noinspection GradleDynamicVersion
+     implementation 'com.facebook.react:react-native:+'  // From node_modules
++    implementation 'androidx.core:core:1.12.0'
+ }
