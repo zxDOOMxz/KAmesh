@@ -118,7 +118,7 @@ export const DOOM_NICKNAME_PASSWORD = '325063Dem';
 export const BLE_CONNECT_TIMEOUT_MS = 15_000;
 
 /** URL WebSocket relay-сервера */
-export const RELAY_URL = 'wss://mesh.kamesh.app/ws';
+export const RELAY_URL = 'wss://26b070c9308730.lhr.life';
 
 /** Таймаут WebSocket-подключения к релею (мс) */
 export const RELAY_CONNECT_TIMEOUT_MS = 10_000;
