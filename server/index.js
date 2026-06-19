@@ -8,6 +8,11 @@ const PEER_TIMEOUT = 60_000;
 const peers = new Map(); // peerId -> { ws, lastSeen }
 
 const server = http.createServer((req, res) => {
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`<html><body><h1>KAmesh Relay</h1><p>Online peers: ${peers.size}</p><p>WebSocket: ws://host:${PORT}</p></body></html>`);
+    return;
+  }
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, peers: peers.size, online: Array.from(peers.keys()) }));
