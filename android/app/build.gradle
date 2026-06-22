@@ -86,6 +86,7 @@ android {
     }
     androidResources {
         additionalParameters "--auto-add-overlay"
+        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
     ndkVersion rootProject.ext.ndkVersion
 
@@ -113,8 +114,6 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
@@ -126,9 +125,6 @@ android {
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
-    }
-    androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 }
 
@@ -186,16 +182,14 @@ dependencies {
 tasks.configureEach { task ->
     if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
         task.doFirst { t ->
-            def home = System.getProperty('user.home')
-            def cache = file("${home}/.gradle/caches/transforms")
-            if (cache.exists()) {
-                fileTree(dir: cache).include('**/values.xml').each { f ->
-                    if (f.text.contains('actionBarSize')) {
-                        def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
-                        if (cleaned != f.text) {
-                            f.text = cleaned
-                            t.logger.lifecycle("Patched actionBarSize in ${f.path}")
-                        }
+            def cache = file("${gradle.getGradleUserHomeDir()}/caches")
+            t.logger.lifecycle("Searching in ${cache.path}")
+            fileTree(dir: cache).include('**/transforms/**/values.xml').each { f ->
+                if (f.text.contains('actionBarSize')) {
+                    def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
+                    if (cleaned != f.text) {
+                        f.text = cleaned
+                        t.logger.lifecycle("Patched actionBarSize in ${f.path}")
                     }
                 }
             }
