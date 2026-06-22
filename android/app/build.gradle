@@ -180,3 +180,25 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+/* Patch for Duplicate attr/actionBarSize conflict between appcompat & material.
+   Remove actionBarSize from library values.xml before resource merging. */
+tasks.configureEach { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
+        task.doFirst { t ->
+            def home = System.getProperty('user.home')
+            def cache = file("${home}/.gradle/caches/transforms")
+            if (cache.exists()) {
+                fileTree(dir: cache).include('**/values.xml').each { f ->
+                    if (f.text.contains('actionBarSize')) {
+                        def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
+                        if (cleaned != f.text) {
+                            f.text = cleaned
+                            t.logger.lifecycle("Patched actionBarSize in ${f.path}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
