@@ -176,6 +176,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-// Remove the material direct dependency that didn't help
-// (was added in a previous attempt to change resource priority)

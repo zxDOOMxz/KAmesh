@@ -8,7 +8,6 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
-      "prebuildCommand": "npx expo prebuild --clean",
       "ios": {
         "simulator": true
       },
@@ -19,7 +18,7 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "prebuildCommand": "npx expo prebuild --clean",
+
       "android": {
         "buildType": "apk"
       },
@@ -46,7 +45,7 @@
     "device-apk": {
       "distribution": "internal",
       "channel": "device-apk",
-      "prebuildCommand": "npx expo prebuild --clean",
+
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
@@ -58,7 +57,6 @@
     "rustore-apk": {
       "channel": "rustore-apk",
       "distribution": "store",
-      "prebuildCommand": "npx expo prebuild --clean",
       "android": {
         "buildType": "apk"
       },
@@ -69,7 +67,6 @@
     "rustore-aab": {
       "channel": "rustore-aab",
       "distribution": "store",
-      "prebuildCommand": "npx expo prebuild --clean",
       "android": {
         "buildType": "app-bundle"
       },
@@ -79,7 +76,6 @@
     },
     "production": {
       "channel": "production",
-      "prebuildCommand": "npx expo prebuild --clean",
       "android": {
         "buildType": "app-bundle"
       },

@@ -1,45 +1,62 @@
 gradle.taskGraph.whenReady { graph ->
     def app = gradle.rootProject.subprojects.find { it.name == 'app' }
-    if (!app) return
-    def rc = app.configurations.findByName('releaseRuntimeClasspath')
-    if (!rc?.canBeResolved) return
+    if (!app) {
+        println "INIT: app project not found"
+        return
+    }
 
     def artifactType = Attribute.of('artifactType', String)
+    def resolved = false
 
-    // Force transform resolution to populate cache
-    try {
-        rc.incoming.artifactView { v ->
-            v.attributes { a -> a.attribute(artifactType, 'extracted-aar') }
-        }.artifacts.collect { it.file }
-    } catch (Exception e) {
-        // Try alternative attribute values
-        try {
-            rc.incoming.artifactView { v ->
-                v.attributes { a -> a.attribute(artifactType, 'android-res') }
-            }.artifacts.collect { it.file }
-        } catch (Exception e2) {
+    // Try multiple configurations to trigger AAR extraction transform
+    def configsToTry = ['releaseRuntimeClasspath', 'implementation', 'api', 'releaseImplementationDependenciesMetadata']
+    def typesToTry = ['extracted-aar', 'android-res', 'android-aar', 'aar']
+
+    for (configName in configsToTry) {
+        def conf = app.configurations.findByName(configName)
+        if (!conf?.canBeResolved) continue
+
+        for (artType in typesToTry) {
             try {
-                rc.incoming.artifactView { v ->
-                    v.attributes { a -> a.attribute(artifactType, 'android-aar') }
+                conf.incoming.artifactView { v ->
+                    v.attributes { a -> a.attribute(artifactType, artType) }
                 }.artifacts.collect { it.file }
-            } catch (Exception e3) {
-                // Fallback: resolve without artifact view
-                rc.resolve()
+                resolved = true
+                println "INIT: Resolved config=$configName type=$artType"
+            } catch (Exception e) {
+                // Expected - type mismatch
             }
+            if (resolved) break
+        }
+        if (resolved) break
+    }
+
+    // Fallback: resolve raw configuration
+    if (!resolved) {
+        try {
+            def rc = app.configurations.findByName('releaseRuntimeClasspath')
+            if (rc?.canBeResolved) rc.resolve()
+            println "INIT: Fallback resolve done"
+        } catch (Exception e) {
+            println "INIT: Fallback resolve failed: ${e.message}"
         }
     }
 
-    // Now patch all values.xml in Gradle cache
+    // Patch all values.xml in Gradle cache
     def cacheDir = new File("${gradle.getGradleUserHomeDir()}/caches")
     def count = 0
     if (cacheDir.exists()) {
-        cacheDir.eachFileRecurse { f ->
-            if (f.name == 'values.xml' && f.text.contains('actionBarSize')) {
-                def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
-                if (cleaned != f.text) {
-                    f.text = cleaned
-                    count++
+        cacheDir.traverse(type: groovy.io.FileType.FILES, nameFilter: ~/values\.xml/) { f ->
+            try {
+                if (f.text.contains('actionBarSize')) {
+                    def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
+                    if (cleaned != f.text) {
+                        f.text = cleaned
+                        count++
+                    }
                 }
+            } catch (Exception e) {
+                // Skip inaccessible files
             }
         }
     }
