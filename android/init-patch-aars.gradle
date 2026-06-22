@@ -1,0 +1,47 @@
+gradle.taskGraph.whenReady { graph ->
+    def app = gradle.rootProject.subprojects.find { it.name == 'app' }
+    if (!app) return
+    def rc = app.configurations.findByName('releaseRuntimeClasspath')
+    if (!rc?.canBeResolved) return
+
+    def artifactType = Attribute.of('artifactType', String)
+
+    // Force transform resolution to populate cache
+    try {
+        rc.incoming.artifactView { v ->
+            v.attributes { a -> a.attribute(artifactType, 'extracted-aar') }
+        }.artifacts.collect { it.file }
+    } catch (Exception e) {
+        // Try alternative attribute values
+        try {
+            rc.incoming.artifactView { v ->
+                v.attributes { a -> a.attribute(artifactType, 'android-res') }
+            }.artifacts.collect { it.file }
+        } catch (Exception e2) {
+            try {
+                rc.incoming.artifactView { v ->
+                    v.attributes { a -> a.attribute(artifactType, 'android-aar') }
+                }.artifacts.collect { it.file }
+            } catch (Exception e3) {
+                // Fallback: resolve without artifact view
+                rc.resolve()
+            }
+        }
+    }
+
+    // Now patch all values.xml in Gradle cache
+    def cacheDir = new File("${gradle.getGradleUserHomeDir()}/caches")
+    def count = 0
+    if (cacheDir.exists()) {
+        cacheDir.eachFileRecurse { f ->
+            if (f.name == 'values.xml' && f.text.contains('actionBarSize')) {
+                def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
+                if (cleaned != f.text) {
+                    f.text = cleaned
+                    count++
+                }
+            }
+        }
+    }
+    println "INIT: Patched $count values.xml files with actionBarSize"
+}
