@@ -6,6 +6,13 @@ dist/
 *.p12
 android/service-account.json
 android/rustore-credentials.json
+android/.gradle/
+android/app/build/
+android/app/src/main/res/
+android/captures/
+android/.idea/
+android/local.properties
+android/*.iml
 pc-preview/dist/
 pc-preview/.vite/
 *.local
@@ -15,5 +22,4 @@ pc-preview/.vite/
 *.log
 .DS_Store
 Thumbs.db
-android/
 ios/
