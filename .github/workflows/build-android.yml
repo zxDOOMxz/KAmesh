@@ -47,33 +47,24 @@ jobs:
 
       - name: Patch material AAR (remove duplicate attr/actionBarSize)
         run: |
-          # Clear any cached material AAR from previous builds
-          rm -rf ~/.gradle/caches/modules-2/files-2.1/com.google.android.material/material
-          rm -rf ~/.gradle/caches/transforms-3/*/transformed/material-*
-
-          # Download original AAR and create patched version in local Maven repo
           mkdir -p ~/.m2/repository/com/google/android/material/material/1.6.1
-          cd /tmp
-          curl -sLO "https://repo1.maven.org/maven2/com/google/android/material/material/1.6.1/material-1.6.1.aar"
-          mkdir material-patched
-          cd material-patched
-          unzip -q ../material-1.6.1.aar
-          sed -i '/actionBarSize/d' res/values/values.xml
+          curl -sLo /tmp/material-1.6.1.aar "https://repo1.maven.org/maven2/com/google/android/material/material/1.6.1/material-1.6.1.aar"
+          mkdir -p /tmp/material-patched
+          unzip -q /tmp/material-1.6.1.aar -d /tmp/material-patched
+          sed -i '/actionBarSize/d' /tmp/material-patched/res/values/values.xml
+          cd /tmp/material-patched
           zip -q -r ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.aar .
-          cd / && rm -rf /tmp/material-patched /tmp/material-1.6.1.aar
-
-          # Create minimal POM for local Maven repo
-          printf '%s\n' \
-            '<?xml version="1.0" encoding="UTF-8"?>' \
-            '<project xmlns="http://maven.apache.org/POM/4.0.0">' \
-            '  <modelVersion>4.0.0</modelVersion>' \
-            '  <groupId>com.google.android.material</groupId>' \
-            '  <artifactId>material</artifactId>' \
-            '  <version>1.6.1</version>' \
-            '  <packaging>aar</packaging>' \
-            '</project>' \
-            > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo "Patched material AAR deployed to local Maven repo (actionBarSize removed)"
+          cd /
+          rm -rf /tmp/material-patched /tmp/material-1.6.1.aar
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '<project xmlns="http://maven.apache.org/POM/4.0.0">' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '  <modelVersion>4.0.0</modelVersion>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '  <groupId>com.google.android.material</groupId>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '  <artifactId>material</artifactId>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '  <version>1.6.1</version>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '  <packaging>aar</packaging>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo '</project>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
+          echo "Patched material AAR deployed to local Maven repo"
 
       - name: Fix gradlew permission
         working-directory: android
