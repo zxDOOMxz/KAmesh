@@ -45,26 +45,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Patch material AAR (remove duplicate attr/actionBarSize)
-        run: |
-          mkdir -p ~/.m2/repository/com/google/android/material/material/1.6.1
-          curl -sLo /tmp/material-1.6.1.aar "https://repo1.maven.org/maven2/com/google/android/material/material/1.6.1/material-1.6.1.aar"
-          mkdir -p /tmp/material-patched
-          unzip -q /tmp/material-1.6.1.aar -d /tmp/material-patched
-          sed -i '/actionBarSize/d' /tmp/material-patched/res/values/values.xml
-          cd /tmp/material-patched
-          zip -q -r ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.aar .
-          cd /
-          rm -rf /tmp/material-patched /tmp/material-1.6.1.aar
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '<project xmlns="http://maven.apache.org/POM/4.0.0">' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '  <modelVersion>4.0.0</modelVersion>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '  <groupId>com.google.android.material</groupId>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '  <artifactId>material</artifactId>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '  <version>1.6.1</version>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '  <packaging>aar</packaging>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo '</project>' >> ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
-          echo "Patched material AAR deployed to local Maven repo"
+      - name: Patch material AAR
+        run: echo "test"
 
       - name: Fix gradlew permission
         working-directory: android
