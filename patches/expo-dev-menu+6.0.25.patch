@@ -1,5 +1,5 @@
 diff --git a/node_modules/expo-dev-menu/android/build.gradle b/node_modules/expo-dev-menu/android/build.gradle
-index a715f0d..94c48e1 100644
+index a715f0d..e3d4b2b 100644
 --- a/node_modules/expo-dev-menu/android/build.gradle
 +++ b/node_modules/expo-dev-menu/android/build.gradle
 @@ -94,7 +94,7 @@ dependencies {
@@ -11,3 +11,12 @@ index a715f0d..94c48e1 100644
  
    implementation project(":expo-dev-menu-interface")
  
+@@ -108,7 +108,7 @@ dependencies {
+   // Fixes
+   // Cannot access 'androidx....' which is a supertype of 'expo.modules.devmenu.DevMenuActivity'.
+   // Check your module classpath for missing or conflicting dependencies
+-  api "androidx.appcompat:appcompat:1.1.0"
++  api "androidx.appcompat:appcompat:1.6.1"
+   api "androidx.lifecycle:lifecycle-extensions:2.2.0"
+ 
+   implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7'

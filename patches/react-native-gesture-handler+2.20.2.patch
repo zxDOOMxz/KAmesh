@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-gesture-handler/android/build.gradle b/node_modules/react-native-gesture-handler/android/build.gradle
+index d882880..bb8738a 100644
+--- a/node_modules/react-native-gesture-handler/android/build.gradle
++++ b/node_modules/react-native-gesture-handler/android/build.gradle
+@@ -185,7 +185,7 @@ dependencies {
+         }
+     }
+ 
+-    implementation 'androidx.appcompat:appcompat:1.2.0'
++    implementation 'androidx.appcompat:appcompat:1.6.1'
+     implementation "androidx.core:core-ktx:1.6.0"
+     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+ }
