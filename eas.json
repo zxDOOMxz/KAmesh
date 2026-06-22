@@ -33,7 +33,6 @@
     "alpha": {
       "distribution": "internal",
       "channel": "alpha",
-      "prebuildCommand": "npx expo prebuild --clean",
       "android": {
         "buildType": "apk"
       },
