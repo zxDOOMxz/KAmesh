@@ -1,0 +1,30 @@
+diff --git a/node_modules/react-native-ble-manager/android/build.gradle b/node_modules/react-native-ble-manager/android/build.gradle
+index b7c85e2..5e837eb 100644
+--- a/node_modules/react-native-ble-manager/android/build.gradle
++++ b/node_modules/react-native-ble-manager/android/build.gradle
+@@ -29,9 +29,7 @@ def isNewArchitectureEnabled() {
+ apply plugin: 'com.android.library'
+ apply plugin: "kotlin-android"
+ 
+-if (isNewArchitectureEnabled()) {
+-    apply plugin: 'com.facebook.react'
+-}
++apply plugin: 'com.facebook.react'
+ 
+ def safeExtGet(prop, fallback) {
+     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+@@ -123,10 +121,8 @@ dependencies {
+     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+ }
+ 
+-if (isNewArchitectureEnabled()) {
+-    react {
+-        jsRootDir = file("../src/")
+-        libraryName = "BleManager"
+-        codegenJavaPackageName = "it.innove"
+-    }
++react {
++    jsRootDir = file("../src/")
++    libraryName = "BleManager"
++    codegenJavaPackageName = "it.innove"
+ }
