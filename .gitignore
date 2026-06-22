@@ -8,7 +8,6 @@ android/service-account.json
 android/rustore-credentials.json
 android/.gradle/
 android/app/build/
-android/app/src/main/res/
 android/captures/
 android/.idea/
 android/local.properties
