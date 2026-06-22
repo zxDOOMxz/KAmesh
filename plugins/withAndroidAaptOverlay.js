@@ -11,11 +11,11 @@ function withAndroidAaptOverlay(config) {
     }
 
     config.modResults.contents = config.modResults.contents.replace(
-      'androidResources {',
-      `aaptOptions {
+      /(\s*android\s*\{)/,
+      `$1
+    aaptOptions {
         additionalParameters "--auto-add-overlay"
-    }
-    androidResources {`
+    }`
     );
     return config;
   });
