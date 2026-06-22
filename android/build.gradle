@@ -17,7 +17,7 @@ buildscript {
     dependencies {
         classpath('com.android.tools.build:gradle')
         classpath('com.facebook.react:react-native-gradle-plugin')
-        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     }
 }
 
@@ -25,6 +25,8 @@ apply plugin: "com.facebook.react.rootproject"
 
 allprojects {
     repositories {
+        // Local repo for patched AARs (e.g. material with actionBarSize removed)
+        maven { url = uri("${System.getProperty('user.home')}/.m2/repository") }
         maven {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
             url(new File(['node', '--print', "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), '../android'))
