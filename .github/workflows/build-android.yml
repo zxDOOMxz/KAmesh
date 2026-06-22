@@ -46,7 +46,31 @@ jobs:
         run: npm ci
 
       - name: Patch material AAR
-        run: echo "test"
+        run: |
+          set -x
+          wget -q "https://repo1.maven.org/maven2/com/google/android/material/material/1.6.1/material-1.6.1.aar" -O /tmp/material-1.6.1.aar
+          echo "Downloaded: $(ls -la /tmp/material-1.6.1.aar)"
+          unzip -qo /tmp/material-1.6.1.aar -d /tmp/material-patched
+          echo "Unzipped"
+          sed -i '/actionBarSize/d' /tmp/material-patched/res/values/values.xml
+          echo "Patched values.xml"
+          cd /tmp/material-patched
+          mkdir -p ~/.m2/repository/com/google/android/material/material/1.6.1
+          jar cf ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.aar .
+          echo "Repacked"
+          cd /
+          rm -rf /tmp/material-patched /tmp/material-1.6.1.aar
+          cat > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom <<POMEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google.android.material</groupId>
+  <artifactId>material</artifactId>
+  <version>1.6.1</version>
+  <packaging>aar</packaging>
+</project>
+POMEOF
+          echo "Done"
 
       - name: Fix gradlew permission
         working-directory: android
