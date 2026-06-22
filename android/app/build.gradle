@@ -177,22 +177,8 @@ dependencies {
     }
 }
 
-/* Patch for Duplicate attr/actionBarSize conflict between appcompat & material.
-   Remove actionBarSize from library values.xml before resource merging. */
-tasks.configureEach { task ->
-    if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
-        task.doFirst { t ->
-            def cache = file("${gradle.getGradleUserHomeDir()}/caches")
-            t.logger.lifecycle("Searching in ${cache.path}")
-            fileTree(dir: cache).include('**/transforms/**/values.xml').each { f ->
-                if (f.text.contains('actionBarSize')) {
-                    def cleaned = f.text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
-                    if (cleaned != f.text) {
-                        f.text = cleaned
-                        t.logger.lifecycle("Patched actionBarSize in ${f.path}")
-                    }
-                }
-            }
-        }
-    }
+/* Force material as direct app dependency so its resources
+   have higher priority than appcompat in resource merging. */
+dependencies {
+    implementation 'com.google.android.material:material:1.6.1'
 }
