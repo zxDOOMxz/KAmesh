@@ -180,3 +180,42 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// HACK: Patch actionBarSize from cached AAR values.xml before resource merge
+// Both material:1.6.1 and appcompat define attr/actionBarSize, causing aapt2 compile to fail.
+// We trigger the extracted-aar transform early (matching AGP's attributes, including BuildTypeAttr),
+// then patch the cached values.xml before the merge task uses them.
+tasks.whenTaskAdded { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('Resources')) {
+        task.doFirst {
+            def artifactType = Attribute.of('artifactType', String)
+            def buildTypeAttr = Attribute.of('com.android.build.api.attributes.BuildTypeAttr', String)
+            try {
+                project.configurations.getByName('releaseRuntimeClasspath').incoming.artifactView { v ->
+                    v.attributes { a ->
+                        a.attribute(artifactType, 'extracted-aar')
+                        a.attribute(buildTypeAttr, 'release')
+                    }
+                }.artifacts.collect { it.file }
+            } catch (Exception e) {
+                logger.warn("PAT: Failed to resolve extracted-aar: ${e.message}")
+            }
+            def cacheDir = file("${gradle.gradleUserHomeDir}/caches")
+            if (cacheDir.exists()) {
+                def count = 0
+                cacheDir.traverse(type: groovy.io.FileType.FILES, nameFilter: ~/values\.xml/) { f ->
+                    try {
+                        def text = f.text
+                        if (text.contains('actionBarSize')) {
+                            f.text = text.replaceAll(/<attr name="actionBarSize"[^>]*\/>/, '')
+                            count++
+                        }
+                    } catch (Exception e) {
+                        // skip inaccessible files
+                    }
+                }
+                logger.warn("PAT: Patched $count values.xml files (actionBarSize removed)")
+            }
+        }
+    }
+}
