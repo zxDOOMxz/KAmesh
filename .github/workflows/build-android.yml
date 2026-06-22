@@ -60,16 +60,16 @@ jobs:
           echo "Repacked"
           cd /
           rm -rf /tmp/material-patched /tmp/material-1.6.1.aar
-          cat > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom <<POMEOF
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.android.material</groupId>
-  <artifactId>material</artifactId>
-  <version>1.6.1</version>
-  <packaging>aar</packaging>
-</project>
-POMEOF
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<project xmlns="http://maven.apache.org/POM/4.0.0">'
+            echo '  <modelVersion>4.0.0</modelVersion>'
+            echo '  <groupId>com.google.android.material</groupId>'
+            echo '  <artifactId>material</artifactId>'
+            echo '  <version>1.6.1</version>'
+            echo '  <packaging>aar</packaging>'
+            echo '</project>'
+          } > ~/.m2/repository/com/google/android/material/material/1.6.1/material-1.6.1.pom
           echo "Done"
 
       - name: Fix gradlew permission
